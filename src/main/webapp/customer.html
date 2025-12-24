@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Book a Ride</title>
+    <title>Book a Ride - RideEase</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
@@ -18,7 +18,11 @@
         }
         .search-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; transition: background 0.2s; }
         .search-item:hover { background-color: #f8f9fa; color: #0d6efd; }
+
+        /* Hide Leaflet text instructions */
         .leaflet-routing-container { display: none !important; }
+
+        /* Modal Overlay */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 9999;
@@ -68,6 +72,8 @@
                         <h6 class="text-success fw-bold">🚖 Driver Assigned!</h6>
                         <hr>
                         <h4 id="dName" class="fw-bold">...</h4>
+                        <div id="dRating" class="badge bg-warning text-dark mb-2 d-none"></div>
+
                         <div class="d-flex justify-content-between align-items-center mt-2">
                             <div>
                                 <div id="dCar" class="fw-bold">Loading Vehicle...</div>
@@ -133,11 +139,27 @@
     </div>
 </div>
 
+<div id="ratingModal" class="modal-overlay d-none">
+    <div class="card p-4 shadow-lg" style="width: 350px;">
+        <h4 class="text-center">Rate Driver</h4>
+        <p class="text-center text-muted">How was your journey?</p>
+        <select id="rateScore" class="form-select mb-3">
+            <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+            <option value="4">⭐⭐⭐⭐ (Good)</option>
+            <option value="3">⭐⭐⭐ (Average)</option>
+            <option value="2">⭐⭐ (Poor)</option>
+            <option value="1">⭐ (Terrible)</option>
+        </select>
+        <textarea id="rateComment" class="form-control mb-3" placeholder="Additional comments..."></textarea>
+        <button onclick="submitRating()" class="btn btn-primary w-100">Submit Rating</button>
+    </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
 <script>
-    // --- 1. GLOBAL VARIABLES (Declared at TOP to prevent ReferenceError) ---
+    // --- 1. GLOBAL VARIABLES (Declared TOP to avoid ReferenceError) ---
     let map = null;
     let routeControl = null;
     let pickupMarker = null;
@@ -152,18 +174,18 @@
     // Monitor Globals
     let monitorInterval = null;
     let currentRideId = localStorage.getItem("activeRideId");
+    let assignedDriverId = null; // Store driver ID for rating
 
-    // --- 2. AUTH & ROLE CHECK (Prevent Driver accessing Customer Page) ---
+    // --- 2. AUTH & ROLE CHECK ---
     const user = JSON.parse(localStorage.getItem("user"));
 
     if(!user) {
         window.location.href="login.html";
     } else if(user.role === "DRIVER") {
-        // If a Driver tries to access this page, send them back!
-        alert("You are logged in as a Driver. Redirecting to Console...");
+        // Guard: Prevent Drivers from seeing this page
+        alert("Logged in as Driver. Redirecting to Console...");
         window.location.href="driver.html";
     } else {
-        // Valid Customer
         document.getElementById("userName").innerText = user.fullName;
     }
 
@@ -171,7 +193,7 @@
     map = L.map('map').setView([28.6139, 77.2090], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // --- 4. RIDE MONITORING (Define function BEFORE using it) ---
+    // --- 4. RIDE MONITORING LOGIC ---
     async function startRideMonitor() {
         if(monitorInterval) clearInterval(monitorInterval);
 
@@ -181,9 +203,9 @@
             try {
                 const res = await fetch("api/rides/status?id=" + currentRideId);
 
-                // SELF-HEALING: If ride not found (DB reset), clear storage
+                // SELF-HEALING: If ride ID invalid (DB reset), clear and reload
                 if(res.status === 404 || res.status === 500) {
-                    console.warn("Ride not found. Clearing stale data.");
+                    console.warn("Ride not found (DB Reset detected). Clearing stale data.");
                     localStorage.removeItem("activeRideId");
                     clearInterval(monitorInterval);
                     location.reload();
@@ -193,24 +215,38 @@
                 if(res.ok) {
                     const ride = await res.json();
 
+                    // STATUS: ACCEPTED or ONGOING
                     if(ride.status === 'ACCEPTED' || ride.status === 'ONGOING') {
                         document.getElementById("statusAlert").classList.add("d-none");
                         document.getElementById("driverInfo").classList.remove("d-none");
 
-                        // Disable route button so they can't book again
+                        // Disable buttons
                         document.getElementById("btnRoute").disabled = true;
 
                         if(ride.driver) {
+                            assignedDriverId = ride.driver.id; // Save for rating later
                             document.getElementById("dName").innerText = ride.driver.fullName;
                             document.getElementById("dPhone").href = "tel:" + ride.driver.phone;
 
+                            // Show Driver Rating
+                            if(ride.driver.averageRating > 0) {
+                                document.getElementById("dRating").innerText = "⭐ " + ride.driver.averageRating;
+                                document.getElementById("dRating").classList.remove("d-none");
+                            } else {
+                                document.getElementById("dRating").classList.add("d-none");
+                            }
+
+                            // Show Vehicle Info
                             if(ride.driver.vehicle) {
                                 const v = ride.driver.vehicle;
                                 document.getElementById("dCar").innerText = `${v.make} ${v.model} (${v.color})`;
                                 document.getElementById("dPlate").innerText = v.plateNumber;
+                            } else {
+                                document.getElementById("dCar").innerText = "Vehicle info loading...";
                             }
                         }
 
+                        // Update Status Text
                         const statusText = document.getElementById("rideStatusText");
                         if (ride.status === 'ONGOING') {
                             statusText.className = "mt-3 alert alert-primary py-1 small text-center";
@@ -220,6 +256,7 @@
                             statusText.innerText = "Driver is arriving soon...";
                         }
                     }
+                    // STATUS: COMPLETED
                     else if(ride.status === 'COMPLETED') {
                         clearInterval(monitorInterval);
                         document.getElementById("driverInfo").classList.add("d-none");
@@ -230,8 +267,7 @@
         }, 3000);
     }
 
-    // --- 5. INITIALIZE STATE ---
-    // Now safe to call because function is defined above
+    // --- 5. INIT CHECK ---
     if(currentRideId) {
         document.getElementById("statusAlert").classList.remove("d-none");
         document.getElementById("btnRoute").disabled = true;
@@ -242,6 +278,7 @@
     document.getElementById('pickup_input').addEventListener('input', (e) => handleInput(e.target.value, 'pickup-list'));
     document.getElementById('drop_input').addEventListener('input', (e) => handleInput(e.target.value, 'drop-list'));
 
+    // Close list when clicking outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.search-container')) {
             document.getElementById('pickup-list').classList.add('d-none');
@@ -273,6 +310,7 @@
                 data.forEach(place => {
                     const div = document.createElement("div");
                     div.className = "search-item";
+                    // Shorten name for display
                     const shortName = place.display_name.split(",").slice(0, 3).join(",");
                     div.innerText = shortName;
                     div.onclick = () => selectLocation(place, listId, shortName);
@@ -325,6 +363,7 @@
             durationTxt = Math.round(route.summary.totalTime / 60) + " mins";
 
             document.getElementById("dist-display").innerText = distanceKm;
+            // Update Prices
             document.getElementById("price-auto").innerText = "₹" + Math.round(distanceKm * 10);
             document.getElementById("price-mini").innerText = "₹" + Math.round(distanceKm * 15);
             document.getElementById("price-prime").innerText = "₹" + Math.round(distanceKm * 20);
@@ -360,7 +399,6 @@
             const ride = await res.json();
             alert("Booking Confirmed! Waiting for driver...");
 
-            // Save state & restart monitoring
             localStorage.setItem("activeRideId", ride.id);
             currentRideId = ride.id;
 
@@ -374,13 +412,14 @@
         }
     }
 
-    // --- 8. PAYMENT & LOGOUT ---
+    // --- 8. PAYMENT & RATING ---
     function showPaymentModal(fare) {
         document.getElementById("payAmount").innerText = fare;
         document.getElementById("paymentModal").classList.remove("d-none");
     }
 
     async function submitPayment() {
+        // Send payment to backend
         const data = {
             rideId: currentRideId,
             amount: parseFloat(document.getElementById("payAmount").innerText),
@@ -390,8 +429,27 @@
         await fetch("api/payments", { method: "POST", body: JSON.stringify(data) });
 
         alert("Payment Successful!");
-        localStorage.removeItem("activeRideId");
+
+        // Hide Payment, Show Rating
         document.getElementById("paymentModal").classList.add("d-none");
+        document.getElementById("ratingModal").classList.remove("d-none");
+    }
+
+    async function submitRating() {
+        const data = {
+            rideId: currentRideId,
+            givenBy: user.id,
+            givenTo: assignedDriverId, // Rate the driver
+            score: parseInt(document.getElementById("rateScore").value),
+            comment: document.getElementById("rateComment").value
+        };
+
+        await fetch("api/ratings", { method: "POST", body: JSON.stringify(data) });
+
+        alert("Thank you! Rating submitted.");
+
+        // Reset Everything
+        localStorage.removeItem("activeRideId");
         location.reload();
     }
 

@@ -21,27 +21,36 @@ public class RideServlet extends HttpServlet {
 
         try {
             if ("/available".equals(path)) {
-                // Fetch requested rides for drivers
+                // 1. Fetch Rides for Driver List (with Customer data)
                 List<Ride> rides = em.createQuery(
                         "SELECT r FROM Ride r JOIN FETCH r.customer WHERE r.status = 'REQUESTED'",
                         Ride.class
                 ).getResultList();
 
+                // Calculate Customer Rating for each ride so Driver can see it
+                for (Ride r : rides) {
+                    if (r.getCustomer() != null) {
+                        r.getCustomer().setAverageRating(getAvgRating(em, r.getCustomer().getId()));
+                    }
+                }
                 resp.getWriter().write(gson.toJson(rides));
 
             } else if ("/calculate".equals(path)) {
                 // Helper for frontend fare calculation
                 double dist = Double.parseDouble(req.getParameter("distance"));
-                // Simple calculation
                 resp.getWriter().write("{\"fare\": " + (dist * 10.0) + "}");
 
             } else if ("/status".equals(path)) {
-                // --- NEW ADDITION FOR POLLING ---
+                // 2. Fetch Status for Customer Monitor
                 String idParam = req.getParameter("id");
                 if (idParam != null) {
                     Long id = Long.parseLong(idParam);
                     Ride ride = em.find(Ride.class, id);
                     if (ride != null) {
+                        // Calculate Driver Rating so Customer can see it
+                        if (ride.getDriver() != null) {
+                            ride.getDriver().setAverageRating(getAvgRating(em, ride.getDriver().getId()));
+                        }
                         resp.getWriter().write(gson.toJson(ride));
                     } else {
                         resp.setStatus(404);
@@ -51,6 +60,18 @@ public class RideServlet extends HttpServlet {
             }
         } finally {
             em.close();
+        }
+    }
+
+    // --- Helper to Calculate Average Rating ---
+    private double getAvgRating(EntityManager em, Long userId) {
+        try {
+            Double avg = em.createQuery("SELECT AVG(r.score) FROM Rating r WHERE r.givenTo = :uid", Double.class)
+                    .setParameter("uid", userId)
+                    .getSingleResult();
+            return avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0; // Round to 1 decimal place
+        } catch (Exception e) {
+            return 0.0; // No ratings yet or error
         }
     }
 
@@ -65,7 +86,7 @@ public class RideServlet extends HttpServlet {
             em.getTransaction().begin();
 
             if ("/book".equals(path)) {
-                // Use the new constructor with coordinates
+                // VALIDATION: Check if customerId is present
                 if (data.customerId == null) {
                     resp.setStatus(400);
                     resp.getWriter().write("{\"error\": \"User not logged in or invalid ID\"}");
@@ -78,6 +99,7 @@ public class RideServlet extends HttpServlet {
                     resp.getWriter().write("{\"error\": \"Customer account not found in DB\"}");
                     return;
                 }
+
                 Ride ride = new Ride(
                         c,
                         data.pickup, data.drop,
