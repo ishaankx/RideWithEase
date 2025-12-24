@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Driver Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <style>
+        #driverMap { height: 300px; width: 100%; border-radius: 5px; }
+        .active-ride-card { border: 2px solid #198754; background-color: #f8fff9; }
+    </style>
+</head>
+<body class="bg-dark text-white p-4">
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>🚖 Driver Console</h2>
+        <div class="text-end">
+            <span id="driverName" class="me-3 text-warning"></span>
+            <button onclick="logout()" class="btn btn-outline-light btn-sm">Logout</button>
+        </div>
+    </div>
+
+    <div id="activeRidePanel" class="card p-4 mb-4 active-ride-card text-dark d-none">
+        <h4 class="text-success border-bottom pb-2">🟢 Current Ride</h4>
+        <div class="row">
+            <div class="col-md-8">
+                <h5 id="arUser">Passenger Name</h5>
+                <p class="mb-1"><strong>Pickup:</strong> <span id="arPick"></span></p>
+                <p class="mb-1"><strong>Drop:</strong> <span id="arDrop"></span></p>
+                <p class="mb-3"><strong>Fare:</strong> ₹<span id="arFare"></span></p>
+            </div>
+            <div class="col-md-4 d-flex align-items-center justify-content-center">
+                <div id="rideControls" class="w-100">
+                    <button id="btnStart" onclick="updateStatus('ONGOING')" class="btn btn-primary w-100 py-3 mb-2 fw-bold">🚀 Start Trip</button>
+                    <button id="btnComplete" onclick="updateStatus('COMPLETED')" class="btn btn-success w-100 py-3 fw-bold d-none">✅ Complete Trip</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="availableRidesSection">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4>Available Requests</h4>
+            <button onclick="loadRides()" class="btn btn-warning btn-sm">🔄 Refresh</button>
+        </div>
+        <div id="rides-list" class="row"></div>
+        <div id="no-rides-msg" class="alert alert-secondary d-none">No new ride requests currently.</div>
+    </div>
+</div>
+
+<div class="modal fade text-dark" id="rideModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5>New Ride Request</h5></div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-5">
+                        <p><strong>Customer:</strong> <span id="mUser"></span></p>
+                        <p><strong>From:</strong> <span id="mPick"></span></p>
+                        <p><strong>To:</strong> <span id="mDrop"></span></p>
+                        <h4 class="text-success mt-3">Earnings: ₹<span id="mFare"></span></h4>
+                    </div>
+                    <div class="col-md-7">
+                        <div id="driverMap"></div>
+                    </div>
+                </div>
+                <button onclick="acceptRide()" class="btn btn-success w-100 mt-3 p-2 fw-bold">ACCEPT RIDE</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const driver = JSON.parse(localStorage.getItem("user"));
+    if(driver) document.getElementById("driverName").innerText = "Welcome, " + driver.fullName;
+
+    const modal = new bootstrap.Modal(document.getElementById('rideModal'));
+
+    // GLOBAL VARIABLE to store fetched rides
+    let availableRides = [];
+    let selectedRide = null;
+    let currentRideId = null;
+    let map = null;
+
+    // --- 1. LOAD AVAILABLE RIDES ---
+    async function loadRides() {
+        if(currentRideId) return;
+
+        try {
+            const res = await fetch("api/rides/available");
+            const rides = await res.json();
+
+            // Store globally so we don't have to pass complex objects in HTML
+            availableRides = rides;
+
+            const list = document.getElementById("rides-list");
+            list.innerHTML = "";
+
+            if(rides.length === 0) {
+                document.getElementById("no-rides-msg").classList.remove("d-none");
+            } else {
+                document.getElementById("no-rides-msg").classList.add("d-none");
+            }
+
+            rides.forEach(r => {
+                // FIX: pass only the ID to the function
+                list.innerHTML += `
+                <div class="col-md-6 mb-3">
+                    <div class="card p-3 shadow-sm border-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div style="width: 60%">
+                                <h6 class="mb-1 text-truncate">📍 ${r.pickupLoc}</h6>
+                                <small class="text-muted">to</small>
+                                <h6 class="mb-1 text-truncate">🏁 ${r.dropLoc}</h6>
+                            </div>
+                            <div class="text-end">
+                                <h4 class="text-success mb-0">₹${r.fare}</h4>
+                                <small>${r.distanceKm} km</small>
+                                <button class="btn btn-dark btn-sm d-block mt-2 w-100" onclick='openModal(${r.id})'>View</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        } catch(e) { console.error(e); }
+    }
+
+    // --- 2. OPEN MODAL (FIXED) ---
+    function openModal(rideId) {
+        // Find the full object from our global array
+        const r = availableRides.find(ride => ride.id === rideId);
+        if(!r) return;
+
+        selectedRide = r;
+
+        // FIX: Use 'fullName' and check for nulls
+        const customerName = r.customer ? r.customer.fullName : "Unknown User";
+        const customerPhone = r.customer ? r.customer.phone : "";
+
+        document.getElementById("mUser").innerText = `${customerName} (${customerPhone})`;
+        document.getElementById("mPick").innerText = r.pickupLoc;
+        document.getElementById("mDrop").innerText = r.dropLoc;
+        document.getElementById("mFare").innerText = r.fare;
+
+        modal.show();
+
+        // Initialize Map
+        setTimeout(() => {
+            if(map) { map.remove(); }
+            map = L.map('driverMap').setView([r.pickupLat, r.pickupLng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            L.Routing.control({
+                waypoints: [
+                    L.latLng(r.pickupLat, r.pickupLng),
+                    L.latLng(r.dropLat, r.dropLng)
+                ],
+                show: false,
+                draggableWaypoints: false,
+                addWaypoints: false
+            }).addTo(map);
+        }, 500);
+    }
+
+    // --- 3. ACCEPT RIDE ---
+    async function acceptRide() {
+        if(!driver) { alert("Not logged in!"); window.location.href="login.html"; return; }
+
+        const data = { rideId: selectedRide.id, driverId: driver.id };
+        const res = await fetch("api/rides/accept", { method: "POST", body: JSON.stringify(data) });
+
+        if(res.ok) {
+            modal.hide();
+            currentRideId = selectedRide.id;
+            activateRidePanel(selectedRide);
+        } else {
+            alert("Failed to accept.");
+            loadRides();
+        }
+    }
+
+    function activateRidePanel(ride) {
+        document.getElementById("availableRidesSection").classList.add("d-none");
+        document.getElementById("activeRidePanel").classList.remove("d-none");
+
+        const cName = ride.customer ? ride.customer.fullName : "Customer";
+        document.getElementById("arUser").innerText = cName;
+        document.getElementById("arPick").innerText = ride.pickupLoc;
+        document.getElementById("arDrop").innerText = ride.dropLoc;
+        document.getElementById("arFare").innerText = ride.fare;
+
+        document.getElementById("btnStart").classList.remove("d-none");
+        document.getElementById("btnComplete").classList.add("d-none");
+    }
+
+    async function updateStatus(status) {
+        const data = { rideId: currentRideId, status: status };
+        const res = await fetch("api/rides/updateStatus", { method: "POST", body: JSON.stringify(data) });
+
+        if(res.ok) {
+            if (status === 'ONGOING') {
+                document.getElementById("btnStart").classList.add("d-none");
+                document.getElementById("btnComplete").classList.remove("d-none");
+            }
+            else if (status === 'COMPLETED') {
+                alert("Trip Completed!");
+                currentRideId = null;
+                document.getElementById("activeRidePanel").classList.add("d-none");
+                document.getElementById("availableRidesSection").classList.remove("d-none");
+                loadRides();
+            }
+        }
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "login.html";
+    }
+
+    loadRides();
+</script>
+</body>
+</html>
