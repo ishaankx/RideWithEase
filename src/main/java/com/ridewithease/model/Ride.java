@@ -19,24 +19,24 @@ public class Ride {
     @JoinColumn(name = "driver_id")
     private Driver driver;
 
-    // Location Text
+
     private String pickupLoc;
     private String dropLoc;
 
-    // Map Coordinates (Lat/Lng)
+
     private double pickupLat;
     private double pickupLng;
     private double dropLat;
     private double dropLng;
 
-    // Trip Details (These were missing in your code!)
+
     private double distanceKm;
     private String duration;
 
     private double fare;
-    private String status; // REQUESTED, ACCEPTED, ONGOING, COMPLETED, CANCELLED
+    private String status;
 
-    // Timestamps for Trip History
+
     @Temporal(TemporalType.TIMESTAMP)
     private Date startTime;
 
@@ -45,7 +45,7 @@ public class Ride {
 
     public Ride() {}
 
-    // Constructor used by RideServlet
+
     public Ride(Customer c, String pick, String drop, double pLat, double pLng, double dLat, double dLng, double dist, double fare, String duration) {
         this.customer = c;
         this.pickupLoc = pick;
@@ -60,7 +60,7 @@ public class Ride {
         this.status = "REQUESTED";
     }
 
-    // --- Getters and Setters ---
+
 
     public Long getId() { return id; }
 

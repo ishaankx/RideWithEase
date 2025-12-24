@@ -53,8 +53,7 @@ public class AuthServlet extends HttpServlet {
                             .signWith(KEY)
                             .compact();
 
-                    // --- FIX IS HERE ---
-                    // We manually add "role" because Gson ignores getRole() since it's not a field.
+
                     String userJson = gson.toJson(u);
                     String jsonResponse = "{\"token\": \"" + token + "\", \"role\": \"" + u.getRole() + "\", \"user\": " + userJson + "}";
 
@@ -70,7 +69,6 @@ public class AuthServlet extends HttpServlet {
 
     static class AuthRequest {
         String fullName, email, phone, password, role;
-        // Driver specific
         String license, make, model, plate, color;
         int year;
     }

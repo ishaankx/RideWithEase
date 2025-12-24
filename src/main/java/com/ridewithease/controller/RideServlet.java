@@ -21,13 +21,13 @@ public class RideServlet extends HttpServlet {
 
         try {
             if ("/available".equals(path)) {
-                // 1. Fetch Rides for Driver List (with Customer data)
+
                 List<Ride> rides = em.createQuery(
                         "SELECT r FROM Ride r JOIN FETCH r.customer WHERE r.status = 'REQUESTED'",
                         Ride.class
                 ).getResultList();
 
-                // Calculate Customer Rating for each ride so Driver can see it
+
                 for (Ride r : rides) {
                     if (r.getCustomer() != null) {
                         r.getCustomer().setAverageRating(getAvgRating(em, r.getCustomer().getId()));
@@ -36,18 +36,18 @@ public class RideServlet extends HttpServlet {
                 resp.getWriter().write(gson.toJson(rides));
 
             } else if ("/calculate".equals(path)) {
-                // Helper for frontend fare calculation
+
                 double dist = Double.parseDouble(req.getParameter("distance"));
                 resp.getWriter().write("{\"fare\": " + (dist * 10.0) + "}");
 
             } else if ("/status".equals(path)) {
-                // 2. Fetch Status for Customer Monitor
+
                 String idParam = req.getParameter("id");
                 if (idParam != null) {
                     Long id = Long.parseLong(idParam);
                     Ride ride = em.find(Ride.class, id);
                     if (ride != null) {
-                        // Calculate Driver Rating so Customer can see it
+
                         if (ride.getDriver() != null) {
                             ride.getDriver().setAverageRating(getAvgRating(em, ride.getDriver().getId()));
                         }
@@ -63,15 +63,15 @@ public class RideServlet extends HttpServlet {
         }
     }
 
-    // --- Helper to Calculate Average Rating ---
+
     private double getAvgRating(EntityManager em, Long userId) {
         try {
             Double avg = em.createQuery("SELECT AVG(r.score) FROM Rating r WHERE r.givenTo = :uid", Double.class)
                     .setParameter("uid", userId)
                     .getSingleResult();
-            return avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0; // Round to 1 decimal place
+            return avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0;
         } catch (Exception e) {
-            return 0.0; // No ratings yet or error
+            return 0.0;
         }
     }
 
@@ -86,7 +86,7 @@ public class RideServlet extends HttpServlet {
             em.getTransaction().begin();
 
             if ("/book".equals(path)) {
-                // VALIDATION: Check if customerId is present
+
                 if (data.customerId == null) {
                     resp.setStatus(400);
                     resp.getWriter().write("{\"error\": \"User not logged in or invalid ID\"}");
@@ -118,7 +118,7 @@ public class RideServlet extends HttpServlet {
                 if (ride != null && driver != null) {
                     ride.setDriver(driver);
                     ride.setStatus("ACCEPTED");
-                    driver.setAvailable(false); // Make driver busy
+                    driver.setAvailable(false);
                     em.getTransaction().commit();
                     resp.getWriter().write(gson.toJson(ride));
                 } else {
@@ -130,14 +130,14 @@ public class RideServlet extends HttpServlet {
             } else if ("/updateStatus".equals(path)) {
                 Ride ride = em.find(Ride.class, data.rideId);
                 if (ride != null) {
-                    ride.setStatus(data.status); // ONGOING, COMPLETED, CANCELLED
+                    ride.setStatus(data.status);
 
                     if ("ONGOING".equals(data.status)) {
                         ride.setStartTime(new java.util.Date());
                     }
                     if ("COMPLETED".equals(data.status)) {
                         ride.setEndTime(new java.util.Date());
-                        // Free up the driver
+
                         if (ride.getDriver() != null) {
                             ride.getDriver().setAvailable(true);
                         }
@@ -161,7 +161,7 @@ public class RideServlet extends HttpServlet {
         }
     }
 
-    // Helper DTO class matching frontend JSON
+
     static class RideRequest {
         Long customerId, driverId, rideId;
         String pickup, drop, duration, status;

@@ -9,9 +9,9 @@ public class Rating {
     @ManyToOne @JoinColumn(name = "ride_id")
     private Ride ride;
 
-    private Long givenBy; // User ID
-    private Long givenTo; // User ID
-    private int score; // 1-5
+    private Long givenBy;
+    private Long givenTo;
+    private int score;
     private String comment;
 
     public Rating() {}

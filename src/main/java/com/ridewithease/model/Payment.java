@@ -11,8 +11,8 @@ public class Payment {
     private Ride ride;
 
     private double amount;
-    private String method; // CASH, CARD, WALLET
-    private String status; // COMPLETED, FAILED
+    private String method;
+    private String status;
     private Date paymentDate = new Date();
 
     public Payment() {}

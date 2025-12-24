@@ -18,7 +18,7 @@ public class PaymentServlet extends HttpServlet {
         PayRequest reqData = new Gson().fromJson(req.getReader(), PayRequest.class);
         Ride ride = em.find(Ride.class, reqData.rideId);
 
-        // Overwrite if exists (as per requirement)
+
         try {
             Query q = em.createQuery("DELETE FROM Payment p WHERE p.ride = :r");
             q.setParameter("r", ride).executeUpdate();

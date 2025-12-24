@@ -11,7 +11,7 @@
         #driverMap { height: 300px; width: 100%; border-radius: 5px; }
         .active-ride-card { border: 2px solid #198754; background-color: #f8fff9; }
 
-        /* Modal Overlay for Ratings */
+
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 9999;
@@ -101,21 +101,21 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // --- 1. INITIALIZATION ---
+
     const driver = JSON.parse(localStorage.getItem("user"));
     if(driver) document.getElementById("driverName").innerText = "Welcome, " + driver.fullName;
 
     const modal = new bootstrap.Modal(document.getElementById('rideModal'));
 
-    // Global State Variables
+
     let availableRides = [];
     let selectedRide = null;
     let currentRideId = null;
     let map = null;
 
-    // --- 2. LOAD RIDES (With Rating Badge) ---
+
     async function loadRides() {
-        if(currentRideId) return; // Don't refresh if busy
+        if(currentRideId) return;
 
         try {
             const res = await fetch("api/rides/available");
@@ -132,7 +132,7 @@
             }
 
             rides.forEach(r => {
-                // Determine Rating Badge
+
                 const ratingHtml = r.customer.averageRating > 0
                     ? `<span class="badge bg-warning text-dark">⭐ ${r.customer.averageRating}</span>`
                     : `<span class="badge bg-secondary">New User</span>`;
@@ -159,14 +159,14 @@
         } catch(e) { console.error(e); }
     }
 
-    // --- 3. OPEN MODAL & MAP ---
+
     function openModal(rideId) {
         const r = availableRides.find(ride => ride.id === rideId);
         if(!r) return;
 
         selectedRide = r;
 
-        // Populate Modal Text
+
         const ratingStr = r.customer.averageRating > 0 ? ` (⭐ ${r.customer.averageRating})` : "";
         document.getElementById("mUser").innerText = `${r.customer.fullName} ${ratingStr}`;
         document.getElementById("mPick").innerText = r.pickupLoc;
@@ -175,7 +175,7 @@
 
         modal.show();
 
-        // Initialize Map (Delay needed for modal transition)
+
         setTimeout(() => {
             if(map) { map.remove(); }
             map = L.map('driverMap').setView([r.pickupLat, r.pickupLng], 13);
@@ -193,7 +193,7 @@
         }, 500);
     }
 
-    // --- 4. ACCEPT RIDE ---
+
     async function acceptRide() {
         if(!driver) { alert("Not logged in!"); window.location.href="login.html"; return; }
 
@@ -223,7 +223,7 @@
         document.getElementById("btnComplete").classList.add("d-none");
     }
 
-    // --- 5. RIDE STATUS & RATING ---
+
     async function updateStatus(status) {
         const data = { rideId: currentRideId, status: status };
         await fetch("api/rides/updateStatus", { method: "POST", body: JSON.stringify(data) });
@@ -234,7 +234,7 @@
             alert("Trip Started!");
         }
         else if (status === 'COMPLETED') {
-            // Show Rating Modal instead of alert
+
             document.getElementById("ratingModal").classList.remove("d-none");
         }
     }
@@ -243,7 +243,7 @@
         const data = {
             rideId: currentRideId,
             givenBy: driver.id,
-            givenTo: selectedRide.customer.id, // Rate the customer
+            givenTo: selectedRide.customer.id,
             score: parseInt(document.getElementById("rateScore").value),
             comment: document.getElementById("rateComment").value
         };
@@ -253,7 +253,7 @@
         if(res.ok) {
             alert("Trip Finished & Rating Submitted!");
 
-            // Reset Dashboard
+
             document.getElementById("ratingModal").classList.add("d-none");
             currentRideId = null;
             document.getElementById("activeRidePanel").classList.add("d-none");
@@ -269,7 +269,7 @@
         window.location.href = "login.html";
     }
 
-    // Start
+
     loadRides();
 </script>
 </body>

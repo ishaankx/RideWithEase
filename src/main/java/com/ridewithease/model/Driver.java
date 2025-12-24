@@ -18,7 +18,7 @@ public class Driver extends User {
         this.vehicle = vehicle;
     }
 
-    // Getters/Setters
+
     public void setAvailable(boolean b) { this.available = b; }
     public Vehicle getVehicle() { return vehicle; }
 }

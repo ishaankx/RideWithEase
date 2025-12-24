@@ -47,20 +47,20 @@
 </div>
 
 <script>
-    // 1. Initialize Page
-    const storedRole = localStorage.getItem("selectedRole"); // 'CUSTOMER' or 'DRIVER'
 
-    // Auto-select dropdown based on previous page selection
+    const storedRole = localStorage.getItem("selectedRole");
+
+
     if(storedRole === 'DRIVER') {
         document.getElementById("regRole").value = "DRIVER";
     } else {
         document.getElementById("regRole").value = "RIDER";
     }
 
-    // Set Title
+
     document.getElementById("formTitle").innerText = (storedRole === "DRIVER" ? "Driver" : "Rider") + " Login";
 
-    // Ensure fields are correct on load
+
     toggleDriverFields();
 
     function toggleForm() {
@@ -83,7 +83,7 @@
     async function register() {
         const roleVal = document.getElementById("regRole").value;
 
-        // Base Data
+
         const data = {
             fullName: document.getElementById("regName").value,
             email: document.getElementById("regEmail").value,
@@ -92,7 +92,7 @@
             role: roleVal
         };
 
-        // Add Driver/Vehicle Data if selected
+
         if (roleVal === 'DRIVER') {
             data.license = document.getElementById("regLicense").value;
             data.plate = document.getElementById("regPlate").value;
@@ -136,14 +136,13 @@
 
             if(res.ok) {
                 const responseData = await res.json();
-                // responseData looks like: { token: "...", role: "DRIVER", user: {...} }
 
-                // Save Token and User Object
+
+
                 localStorage.setItem("token", responseData.token);
                 localStorage.setItem("user", JSON.stringify(responseData.user));
 
-                // --- FIX IS HERE ---
-                // We read "role" directly from the root of the JSON response
+
                 const userRole = responseData.role;
 
                 if (userRole === "DRIVER") {

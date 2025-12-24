@@ -21,8 +21,7 @@ public class RatingServlet extends HttpServlet {
 
             Ride ride = em.find(Ride.class, data.rideId);
 
-            // Check if rating already exists for this pair to avoid duplicates (Optional logic)
-            // For MVP, we just save it.
+
 
             Rating rating = new Rating(ride, data.givenBy, data.givenTo, data.score, data.comment);
             em.persist(rating);

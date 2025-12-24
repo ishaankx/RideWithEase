@@ -18,7 +18,7 @@ public abstract class User {
     @Temporal(TemporalType.TIMESTAMP)
     protected Date createdAt = new Date();
 
-    @Transient // This field is NOT stored in DB, just calculated for UI
+    @Transient
     private double averageRating;
 
     public double getAverageRating() { return averageRating; }
@@ -33,7 +33,7 @@ public abstract class User {
     public Long getId() { return id; }
     public String getRole() { return this instanceof Customer ? "RIDER" : "DRIVER"; }
     public String getFullName() { return fullName; }
-    public String getEmail() { return email; }  // <--- This fixes your error
+    public String getEmail() { return email; }
     public String getPhone() { return phone; }
 
 }

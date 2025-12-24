@@ -19,10 +19,10 @@
         .search-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; transition: background 0.2s; }
         .search-item:hover { background-color: #f8f9fa; color: #0d6efd; }
 
-        /* Hide Leaflet text instructions */
+
         .leaflet-routing-container { display: none !important; }
 
-        /* Modal Overlay */
+
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 9999;
@@ -159,7 +159,7 @@
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
 <script>
-    // --- 1. GLOBAL VARIABLES (Declared TOP to avoid ReferenceError) ---
+
     let map = null;
     let routeControl = null;
     let pickupMarker = null;
@@ -167,33 +167,33 @@
     let distanceKm = 0;
     let durationTxt = "";
 
-    // Search Globals
+
     let debounceTimer = null;
     let currentController = null;
 
-    // Monitor Globals
+
     let monitorInterval = null;
     let currentRideId = localStorage.getItem("activeRideId");
-    let assignedDriverId = null; // Store driver ID for rating
+    let assignedDriverId = null;
 
-    // --- 2. AUTH & ROLE CHECK ---
+
     const user = JSON.parse(localStorage.getItem("user"));
 
     if(!user) {
         window.location.href="login.html";
     } else if(user.role === "DRIVER") {
-        // Guard: Prevent Drivers from seeing this page
+
         alert("Logged in as Driver. Redirecting to Console...");
         window.location.href="driver.html";
     } else {
         document.getElementById("userName").innerText = user.fullName;
     }
 
-    // --- 3. MAP INIT ---
+
     map = L.map('map').setView([28.6139, 77.2090], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-    // --- 4. RIDE MONITORING LOGIC ---
+
     async function startRideMonitor() {
         if(monitorInterval) clearInterval(monitorInterval);
 
@@ -203,7 +203,7 @@
             try {
                 const res = await fetch("api/rides/status?id=" + currentRideId);
 
-                // SELF-HEALING: If ride ID invalid (DB reset), clear and reload
+
                 if(res.status === 404 || res.status === 500) {
                     console.warn("Ride not found (DB Reset detected). Clearing stale data.");
                     localStorage.removeItem("activeRideId");
@@ -215,20 +215,20 @@
                 if(res.ok) {
                     const ride = await res.json();
 
-                    // STATUS: ACCEPTED or ONGOING
+
                     if(ride.status === 'ACCEPTED' || ride.status === 'ONGOING') {
                         document.getElementById("statusAlert").classList.add("d-none");
                         document.getElementById("driverInfo").classList.remove("d-none");
 
-                        // Disable buttons
+
                         document.getElementById("btnRoute").disabled = true;
 
                         if(ride.driver) {
-                            assignedDriverId = ride.driver.id; // Save for rating later
+                            assignedDriverId = ride.driver.id;
                             document.getElementById("dName").innerText = ride.driver.fullName;
                             document.getElementById("dPhone").href = "tel:" + ride.driver.phone;
 
-                            // Show Driver Rating
+
                             if(ride.driver.averageRating > 0) {
                                 document.getElementById("dRating").innerText = "⭐ " + ride.driver.averageRating;
                                 document.getElementById("dRating").classList.remove("d-none");
@@ -236,7 +236,7 @@
                                 document.getElementById("dRating").classList.add("d-none");
                             }
 
-                            // Show Vehicle Info
+
                             if(ride.driver.vehicle) {
                                 const v = ride.driver.vehicle;
                                 document.getElementById("dCar").innerText = `${v.make} ${v.model} (${v.color})`;
@@ -246,7 +246,7 @@
                             }
                         }
 
-                        // Update Status Text
+
                         const statusText = document.getElementById("rideStatusText");
                         if (ride.status === 'ONGOING') {
                             statusText.className = "mt-3 alert alert-primary py-1 small text-center";
@@ -256,7 +256,7 @@
                             statusText.innerText = "Driver is arriving soon...";
                         }
                     }
-                    // STATUS: COMPLETED
+
                     else if(ride.status === 'COMPLETED') {
                         clearInterval(monitorInterval);
                         document.getElementById("driverInfo").classList.add("d-none");
@@ -267,18 +267,18 @@
         }, 3000);
     }
 
-    // --- 5. INIT CHECK ---
+
     if(currentRideId) {
         document.getElementById("statusAlert").classList.remove("d-none");
         document.getElementById("btnRoute").disabled = true;
         startRideMonitor();
     }
 
-    // --- 6. SEARCH LOGIC ---
+
     document.getElementById('pickup_input').addEventListener('input', (e) => handleInput(e.target.value, 'pickup-list'));
     document.getElementById('drop_input').addEventListener('input', (e) => handleInput(e.target.value, 'drop-list'));
 
-    // Close list when clicking outside
+
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.search-container')) {
             document.getElementById('pickup-list').classList.add('d-none');
@@ -310,7 +310,7 @@
                 data.forEach(place => {
                     const div = document.createElement("div");
                     div.className = "search-item";
-                    // Shorten name for display
+
                     const shortName = place.display_name.split(",").slice(0, 3).join(",");
                     div.innerText = shortName;
                     div.onclick = () => selectLocation(place, listId, shortName);
@@ -363,7 +363,7 @@
             durationTxt = Math.round(route.summary.totalTime / 60) + " mins";
 
             document.getElementById("dist-display").innerText = distanceKm;
-            // Update Prices
+
             document.getElementById("price-auto").innerText = "₹" + Math.round(distanceKm * 10);
             document.getElementById("price-mini").innerText = "₹" + Math.round(distanceKm * 15);
             document.getElementById("price-prime").innerText = "₹" + Math.round(distanceKm * 20);
@@ -372,7 +372,7 @@
         }).addTo(map);
     }
 
-    // --- 7. BOOKING ---
+
     async function selectRide(type, rate) {
         if(!user) return;
         const fare = Math.round(distanceKm * rate);
@@ -412,14 +412,14 @@
         }
     }
 
-    // --- 8. PAYMENT & RATING ---
+
     function showPaymentModal(fare) {
         document.getElementById("payAmount").innerText = fare;
         document.getElementById("paymentModal").classList.remove("d-none");
     }
 
     async function submitPayment() {
-        // Send payment to backend
+
         const data = {
             rideId: currentRideId,
             amount: parseFloat(document.getElementById("payAmount").innerText),
@@ -430,7 +430,7 @@
 
         alert("Payment Successful!");
 
-        // Hide Payment, Show Rating
+
         document.getElementById("paymentModal").classList.add("d-none");
         document.getElementById("ratingModal").classList.remove("d-none");
     }
@@ -439,7 +439,7 @@
         const data = {
             rideId: currentRideId,
             givenBy: user.id,
-            givenTo: assignedDriverId, // Rate the driver
+            givenTo: assignedDriverId,
             score: parseInt(document.getElementById("rateScore").value),
             comment: document.getElementById("rateComment").value
         };
@@ -448,7 +448,7 @@
 
         alert("Thank you! Rating submitted.");
 
-        // Reset Everything
+
         localStorage.removeItem("activeRideId");
         location.reload();
     }
