@@ -1,16 +1,15 @@
-// --- 1. INITIALIZATION ---
 const driver = JSON.parse(localStorage.getItem("user"));
 if(driver) document.getElementById("driverName").innerText = "Welcome, " + driver.fullName;
 
 const modal = new bootstrap.Modal(document.getElementById('rideModal'));
 
-// Globals
+
 let availableRides = [];
 let selectedRide = null;
 let currentRideId = null;
 let map = null;
 
-// --- 2. LOAD RIDES ---
+
 async function loadRides() {
     if(currentRideId) return;
 
@@ -29,7 +28,6 @@ async function loadRides() {
         }
 
         rides.forEach(r => {
-            // FIX: Use string concatenation instead of ${} to avoid JSP conflict
             const ratingHtml = r.customer.averageRating > 0
                 ? '<span class="badge bg-warning text-dark">⭐ ' + r.customer.averageRating + '</span>'
                 : '<span class="badge bg-secondary">New User</span>';
@@ -56,14 +54,13 @@ async function loadRides() {
     } catch(e) { console.error(e); }
 }
 
-// --- 3. MODAL ---
+
 function openModal(rideId) {
     const r = availableRides.find(ride => ride.id === rideId);
     if(!r) return;
 
     selectedRide = r;
 
-    // FIX: String concatenation here too
     const ratingStr = r.customer.averageRating > 0 ? ' (⭐ ' + r.customer.averageRating + ')' : "";
     document.getElementById("mUser").innerText = r.customer.fullName + ratingStr;
     document.getElementById("mPick").innerText = r.pickupLoc;
@@ -89,9 +86,9 @@ function openModal(rideId) {
     }, 500);
 }
 
-// --- 4. ACCEPT ---
+
 async function acceptRide() {
-    if(!driver) { alert("Not logged in!"); window.location.href="login.jsp"; return; } // JSP Redirect
+    if(!driver) { alert("Not logged in!"); window.location.href="login.jsp"; return; }
 
     const data = { rideId: selectedRide.id, driverId: driver.id };
     const res = await fetch("api/rides/accept", { method: "POST", body: JSON.stringify(data) });
@@ -119,15 +116,49 @@ function activateRidePanel(ride) {
     document.getElementById("btnComplete").classList.add("d-none");
 }
 
-// --- 5. UPDATE & RATE ---
+
+
+function openOtpModal() {
+    document.getElementById('otpModal').classList.remove('d-none');
+    document.getElementById('otpInput').value = '';
+    document.getElementById('otpInput').focus();
+}
+
+async function submitOtpAndStart() {
+    const enteredOtp = document.getElementById("otpInput").value;
+    if (enteredOtp.length !== 4) {
+        alert("Please enter a valid 4-digit PIN.");
+        return;
+    }
+
+
+    const data = {
+        rideId: currentRideId,
+        status: 'ONGOING',
+        otp: enteredOtp
+    };
+
+    const res = await fetch("api/rides/updateStatus", { method: "POST", body: JSON.stringify(data) });
+
+    if (res.ok) {
+
+        document.getElementById("otpModal").classList.add("d-none");
+        document.getElementById("btnStart").classList.add("d-none");
+        document.getElementById("btnComplete").classList.remove("d-none");
+        alert("OTP Verified! Trip Started.");
+    } else {
+        alert("Incorrect PIN. Please try again.");
+    }
+}
+
 async function updateStatus(status) {
     const data = { rideId: currentRideId, status: status };
     await fetch("api/rides/updateStatus", { method: "POST", body: JSON.stringify(data) });
 
     if (status === 'ONGOING') {
+
         document.getElementById("btnStart").classList.add("d-none");
         document.getElementById("btnComplete").classList.remove("d-none");
-        alert("Trip Started!");
     }
     else if (status === 'COMPLETED') {
         document.getElementById("ratingModal").classList.remove("d-none");
@@ -160,8 +191,7 @@ async function submitRating() {
 
 function logout() {
     localStorage.clear();
-    window.location.href = "login.jsp"; // JSP Redirect
+    window.location.href = "login.jsp";
 }
 
-// Start
 loadRides();

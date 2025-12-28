@@ -1,4 +1,3 @@
-// 1. Initialize Page
 const storedRole = localStorage.getItem("selectedRole");
 
 if(storedRole === 'DRIVER') {
@@ -86,7 +85,7 @@ async function login() {
 
             const userRole = responseData.role;
 
-            // --- REDIRECTS TO JSP ---
+
             if (userRole === "DRIVER") {
                 window.location.href = "driver.jsp";
             } else {

@@ -27,11 +27,12 @@ public class RideServlet extends HttpServlet {
                         Ride.class
                 ).getResultList();
 
-
                 for (Ride r : rides) {
                     if (r.getCustomer() != null) {
                         r.getCustomer().setAverageRating(getAvgRating(em, r.getCustomer().getId()));
                     }
+
+                    r.setOtp(null);
                 }
                 resp.getWriter().write(gson.toJson(rides));
 
@@ -47,10 +48,10 @@ public class RideServlet extends HttpServlet {
                     Long id = Long.parseLong(idParam);
                     Ride ride = em.find(Ride.class, id);
                     if (ride != null) {
-
                         if (ride.getDriver() != null) {
                             ride.getDriver().setAverageRating(getAvgRating(em, ride.getDriver().getId()));
                         }
+
                         resp.getWriter().write(gson.toJson(ride));
                     } else {
                         resp.setStatus(404);
@@ -62,7 +63,6 @@ public class RideServlet extends HttpServlet {
             em.close();
         }
     }
-
 
     private double getAvgRating(EntityManager em, Long userId) {
         try {
@@ -112,6 +112,7 @@ public class RideServlet extends HttpServlet {
                 resp.getWriter().write(gson.toJson(ride));
 
             } else if ("/accept".equals(path)) {
+
                 Ride ride = em.find(Ride.class, data.rideId);
                 Driver driver = em.find(Driver.class, data.driverId);
 
@@ -128,16 +129,26 @@ public class RideServlet extends HttpServlet {
                 }
 
             } else if ("/updateStatus".equals(path)) {
+
                 Ride ride = em.find(Ride.class, data.rideId);
                 if (ride != null) {
-                    ride.setStatus(data.status);
+
 
                     if ("ONGOING".equals(data.status)) {
+
+                        if (data.otp == null || !data.otp.equals(ride.getOtp())) {
+                            em.getTransaction().rollback();
+                            resp.setStatus(403);
+                            resp.getWriter().write("{\"error\": \"Invalid OTP\"}");
+                            return;
+                        }
                         ride.setStartTime(new java.util.Date());
                     }
+
+                    ride.setStatus(data.status);
+
                     if ("COMPLETED".equals(data.status)) {
                         ride.setEndTime(new java.util.Date());
-
                         if (ride.getDriver() != null) {
                             ride.getDriver().setAvailable(true);
                         }
@@ -161,10 +172,13 @@ public class RideServlet extends HttpServlet {
         }
     }
 
-
     static class RideRequest {
         Long customerId, driverId, rideId;
         String pickup, drop, duration, status;
+
+
+        String otp;
+
         double distance, fare;
         double pickupLat, pickupLng, dropLat, dropLng;
     }

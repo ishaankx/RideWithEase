@@ -49,6 +49,11 @@
                 <div id="driverInfo" class="card mt-3 border-success d-none" style="background: #f0fff4;">
                     <div class="card-body">
                         <h6 class="text-success fw-bold">🚖 Driver Assigned!</h6>
+
+                        <div class="alert alert-warning text-center fw-bold fs-4 py-2 mt-2">
+                            PIN: <span id="rideOtp">----</span>
+                        </div>
+
                         <hr>
                         <h4 id="dName" class="fw-bold">...</h4>
                         <div id="dRating" class="badge bg-warning text-dark mb-2 d-none"></div>
@@ -82,7 +87,7 @@
                             <span>🚗 Mini</span> <span class="badge bg-primary rounded-pill" id="price-mini">₹0</span>
                         </button>
                         <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="selectRide('PRIME', 20)">
-                            <span>SUV Prime</span> <span class="badge bg-primary rounded-pill" id="price-prime">₹0</span>
+                            <span>🚙 SUV Prime</span> <span class="badge bg-primary rounded-pill" id="price-prime">₹0</span>
                         </button>
                     </div>
                 </div>

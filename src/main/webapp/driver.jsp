@@ -13,7 +13,7 @@
 
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>🚖 Driver Console</h2>
+        <h2>Driver Console</h2>
         <div class="text-end">
             <span id="driverName" class="me-3 text-warning"></span>
             <button onclick="logout()" class="btn btn-outline-light btn-sm">Logout</button>
@@ -31,8 +31,8 @@
             </div>
             <div class="col-md-4 d-flex align-items-center justify-content-center">
                 <div id="rideControls" class="w-100">
-                    <button id="btnStart" onclick="updateStatus('ONGOING')" class="btn btn-primary w-100 py-3 mb-2 fw-bold">🚀 Start Trip</button>
-                    <button id="btnComplete" onclick="updateStatus('COMPLETED')" class="btn btn-success w-100 py-3 fw-bold d-none">✅ Complete Trip</button>
+                    <button id="btnStart" onclick="openOtpModal()" class="btn btn-primary w-100 py-3 mb-2 fw-bold">Start Trip</button>
+                    <button id="btnComplete" onclick="updateStatus('COMPLETED')" class="btn btn-success w-100 py-3 fw-bold d-none">Complete Trip</button>
                 </div>
             </div>
         </div>
@@ -67,6 +67,18 @@
                 <button onclick="acceptRide()" class="btn btn-success w-100 mt-3 p-2 fw-bold">ACCEPT RIDE</button>
             </div>
         </div>
+    </div>
+</div>
+
+<div id="otpModal" class="modal-overlay d-none">
+    <div class="card p-4 shadow-lg text-dark" style="width: 300px;">
+        <h4 class="text-center mb-3">Enter Ride OTP</h4>
+        <p class="text-center small text-muted">Ask the customer for the 4-digit PIN.</p>
+
+        <input type="number" id="otpInput" class="form-control text-center fs-3 mb-3" placeholder="0000" maxlength="4">
+
+        <button onclick="submitOtpAndStart()" class="btn btn-success w-100 fw-bold">Start Ride</button>
+        <button onclick="document.getElementById('otpModal').classList.add('d-none')" class="btn btn-outline-secondary w-100 mt-2">Cancel</button>
     </div>
 </div>
 

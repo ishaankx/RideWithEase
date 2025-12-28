@@ -1,4 +1,4 @@
-// --- 1. GLOBALS ---
+
 let map = null;
 let routeControl = null;
 let pickupMarker = null;
@@ -13,23 +13,23 @@ let monitorInterval = null;
 let currentRideId = localStorage.getItem("activeRideId");
 let assignedDriverId = null;
 
-// --- 2. AUTH ---
+
 const user = JSON.parse(localStorage.getItem("user"));
 
 if(!user) {
-    window.location.href="login.jsp"; // Redirect to JSP
+    window.location.href="login.jsp";
 } else if(user.role === "DRIVER") {
     alert("Logged in as Driver. Redirecting to Console...");
-    window.location.href="driver.jsp"; // Redirect to JSP
+    window.location.href="driver.jsp";
 } else {
     document.getElementById("userName").innerText = user.fullName;
 }
 
-// --- 3. MAP INIT ---
+
 map = L.map('map').setView([28.6139, 77.2090], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// --- 4. LOGIC ---
+
 async function startRideMonitor() {
     if(monitorInterval) clearInterval(monitorInterval);
 
@@ -60,6 +60,11 @@ async function startRideMonitor() {
                         document.getElementById("dName").innerText = ride.driver.fullName;
                         document.getElementById("dPhone").href = "tel:" + ride.driver.phone;
 
+
+                        if(ride.otp) {
+                            document.getElementById("rideOtp").innerText = ride.otp;
+                        }
+
                         if(ride.driver.averageRating > 0) {
                             document.getElementById("dRating").innerText = "⭐ " + ride.driver.averageRating;
                             document.getElementById("dRating").classList.remove("d-none");
@@ -69,7 +74,6 @@ async function startRideMonitor() {
 
                         if(ride.driver.vehicle) {
                             const v = ride.driver.vehicle;
-                            // String concatenation to avoid JSP conflicts
                             document.getElementById("dCar").innerText = v.make + " " + v.model + " (" + v.color + ")";
                             document.getElementById("dPlate").innerText = v.plateNumber;
                         } else {
@@ -102,7 +106,7 @@ if(currentRideId) {
     startRideMonitor();
 }
 
-// --- SEARCH ---
+
 document.getElementById('pickup_input').addEventListener('input', (e) => handleInput(e.target.value, 'pickup-list'));
 document.getElementById('drop_input').addEventListener('input', (e) => handleInput(e.target.value, 'drop-list'));
 
@@ -128,7 +132,6 @@ async function performSearch(query, listId) {
 
     try {
         const list = document.getElementById(listId);
-        // FIX: String concatenation for URL construction to avoid JSP conflicts
         const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + query + '&limit=5', { signal: currentController.signal });
         const data = await res.json();
 
@@ -274,5 +277,5 @@ async function submitRating() {
 
 function logout() {
     localStorage.clear();
-    window.location.href = "login.jsp"; // Redirect to JSP
+    window.location.href = "login.jsp";
 }

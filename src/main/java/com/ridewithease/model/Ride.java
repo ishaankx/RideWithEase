@@ -2,6 +2,7 @@ package com.ridewithease.model;
 
 import jakarta.persistence.*;
 import java.util.Date;
+import java.util.Random;
 
 @Entity
 @Table(name = "rides")
@@ -36,6 +37,8 @@ public class Ride {
     private double fare;
     private String status;
 
+    private String otp;
+
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date startTime;
@@ -58,11 +61,16 @@ public class Ride {
         this.fare = fare;
         this.duration = duration;
         this.status = "REQUESTED";
+
+        this.otp = String.format("%04d", new Random().nextInt(10000));
     }
 
 
 
     public Long getId() { return id; }
+
+    public String getOtp() { return otp; }
+    public void setOtp(String otp) { this.otp = otp; }
 
     public Customer getCustomer() { return customer; }
     public void setCustomer(Customer customer) { this.customer = customer; }
