@@ -1,0 +1,3 @@
+body { background: #f8f9fa; height: 100vh; display: flex; align-items: center; justify-content: center; }
+.role-card { width: 300px; padding: 30px; margin: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
+.role-card:hover { transform: scale(1.05); shadow: 0 5px 15px rgba(0,0,0,0.2); }
