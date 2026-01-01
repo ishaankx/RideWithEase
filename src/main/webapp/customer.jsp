@@ -15,7 +15,8 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="text-primary fw-bold">RideWithEase</h4>
         <div>
-            <span id="userName" class="me-3 fw-bold text-dark"></span>
+            <a href="profile.jsp" class="me-3 fw-bold text-dark text-decoration-none" id="userName"></a>
+            <span id="loyaltyPoints" class="me-3 text-success fw-semibold"></span>
             <button onclick="logout()" class="btn btn-outline-danger btn-sm">Logout</button>
         </div>
     </div>
@@ -101,19 +102,40 @@
 </div>
 
 <div id="paymentModal" class="modal-overlay d-none">
-    <div class="card p-4 shadow-lg" style="width: 350px;">
+    <div class="card p-4 shadow-lg" style="width: 400px;">
         <div class="text-center mb-3">
             <h1 class="text-success">✅</h1>
             <h4>Trip Completed!</h4>
-            <p class="text-muted">Please verify and pay the fare.</p>
+            <p class="text-muted">Apply coupon and pay the fare.</p>
         </div>
+
         <div class="bg-light p-3 rounded mb-3">
+            <div class="d-flex justify-content-between mb-2">
+                <span>Original Fare:</span>
+                <span>₹<span id="originalFare">0</span></span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span>Coupon Discount:</span>
+                <span class="text-success">-₹<span id="couponDiscountAmount">0</span></span>
+            </div>
+            <hr class="my-2">
             <div class="d-flex justify-content-between">
-                <span>Total Fare:</span>
-                <span class="fw-bold fs-5">₹<span id="payAmount">0</span></span>
+                <span class="fw-bold">Total to Pay:</span>
+                <span class="fw-bold fs-5 text-primary">₹<span id="finalAmount">0</span></span>
             </div>
         </div>
-        <label class="form-label">Payment Method</label>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold">🎁 Apply Coupon</label>
+            <select id="couponSelect" class="form-select" onchange="applyCoupon()">
+                <option value="none">No Coupon</option>
+                <option value="newrider" id="newriderOption" style="display: none;">🎉 NEWRIDER: 50₹ off</option>
+                <option value="10rides" id="10ridesOption" style="display: none;">🚀 10RIDES: 50₹ off</option>
+                <option value="50rides" id="50ridesOption" style="display: none;">🏆 50RIDES: 70₹ off</option>
+            </select>
+        </div>
+
+        <label class="form-label fw-bold">💳 Payment Method</label>
         <select id="payMethod" class="form-select mb-3">
             <option value="CASH">💵 Cash</option>
             <option value="UPI">📱 UPI / QR</option>
