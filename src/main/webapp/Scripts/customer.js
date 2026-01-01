@@ -15,14 +15,43 @@ let assignedDriverId = null;
 
 
 const user = JSON.parse(localStorage.getItem("user"));
+const token = localStorage.getItem("token");
 
-if(!user) {
+if(!user || !token) {
     window.location.href="login.jsp";
 } else if(user.role === "DRIVER") {
     alert("Logged in as Driver. Redirecting to Console...");
     window.location.href="driver.jsp";
 } else {
+    // Fetch fresh user data to ensure loyalty points are up to date
+    fetchFreshUserData();
+}
+
+async function fetchFreshUserData() {
+    try {
+        const response = await fetch("api/auth/me", {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const freshUser = await response.json();
+            // Update localStorage with fresh data
+            localStorage.setItem("user", JSON.stringify(freshUser));
+            // Update the global user variable
+            Object.assign(user, freshUser);
+        }
+    } catch (error) {
+        console.warn("Could not fetch fresh user data:", error);
+    }
+    
+    // Always update display with current data
     document.getElementById("userName").innerText = user.fullName;
+    updateLoyaltyPointsDisplay();
+}
+
+function updateLoyaltyPointsDisplay() {
+    const points = user.loyaltyPoints || 0;
+    document.getElementById("loyaltyPoints").innerText = `Points: ${points}`;
 }
 
 
@@ -92,6 +121,8 @@ async function startRideMonitor() {
                 }
                 else if(ride.status === 'COMPLETED') {
                     clearInterval(monitorInterval);
+                    // Refresh user data to get updated loyalty points
+                    await fetchFreshUserData();
                     document.getElementById("driverInfo").classList.add("d-none");
                     showPaymentModal(ride.fare);
                 }
@@ -241,22 +272,94 @@ async function selectRide(type, rate) {
 }
 
 function showPaymentModal(fare) {
-    document.getElementById("payAmount").innerText = fare;
+    // Set original fare
+    document.getElementById("originalFare").textContent = fare;
+    document.getElementById("finalAmount").textContent = fare;
+    document.getElementById("couponDiscountAmount").textContent = "0";
+
+    // Reset coupon selection
+    document.getElementById("couponSelect").value = "none";
+
+    // Show available coupons based on completed rides
+    const completedRides = user.completedRides || 0;
+
+    // NEWRIDER: Available for first ride
+    if (completedRides === 0 && !user.usedNewRider) {
+        document.getElementById("newriderOption").style.display = "block";
+    } else {
+        document.getElementById("newriderOption").style.display = "none";
+    }
+
+    // 10RIDES: Available for 11th ride
+    if (completedRides === 10 && !user.usedTenRides) {
+        document.getElementById("10ridesOption").style.display = "block";
+    } else {
+        document.getElementById("10ridesOption").style.display = "none";
+    }
+
+    // 50RIDES: Available for 51st ride
+    if (completedRides === 50 && !user.usedFiftyRides) {
+        document.getElementById("50ridesOption").style.display = "block";
+    } else {
+        document.getElementById("50ridesOption").style.display = "none";
+    }
+
     document.getElementById("paymentModal").classList.remove("d-none");
 }
 
+function applyCoupon() {
+    const selectedCoupon = document.getElementById("couponSelect").value;
+    const originalFare = parseFloat(document.getElementById("originalFare").textContent);
+
+    let discount = 0;
+
+    switch(selectedCoupon) {
+        case "newrider":
+            discount = 50;
+            break;
+        case "10rides":
+            discount = 50;
+            break;
+        case "50rides":
+            discount = 70;
+            break;
+        default:
+            discount = 0;
+    }
+
+    document.getElementById("couponDiscountAmount").textContent = discount;
+    document.getElementById("finalAmount").textContent = Math.max(0, originalFare - discount);
+}
+
 async function submitPayment() {
+    const selectedCoupon = document.getElementById("couponSelect").value;
+    const finalAmount = parseFloat(document.getElementById("finalAmount").textContent);
+
     const data = {
         rideId: currentRideId,
-        amount: parseFloat(document.getElementById("payAmount").innerText),
-        method: document.getElementById("payMethod").value
+        amount: finalAmount,
+        method: document.getElementById("payMethod").value,
+        coupon: selectedCoupon
     };
 
-    await fetch("api/payments", { method: "POST", body: JSON.stringify(data) });
+    const response = await fetch("api/payments", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
 
-    alert("Payment Successful!");
-    document.getElementById("paymentModal").classList.add("d-none");
-    document.getElementById("ratingModal").classList.remove("d-none");
+    if (response.ok) {
+        const result = await response.json();
+        alert("Payment Successful!");
+        // Update loyalty points in localStorage with server value
+        user.loyaltyPoints = result.loyaltyPoints;
+        localStorage.setItem("user", JSON.stringify(user));
+        updateLoyaltyPointsDisplay();
+        document.getElementById("paymentModal").classList.add("d-none");
+        document.getElementById("ratingModal").classList.remove("d-none");
+    } else {
+        alert("Payment Failed. Please try again.");
+    }
 }
 
 async function submitRating() {
