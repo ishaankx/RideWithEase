@@ -1,0 +1,29 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #eee;
+    padding: 15px;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    transition: background 0.2s;
+}
+
+.list-group-item:hover {
+    background-color: #fafafa;
+}
+
+#rideHistory {
+    max-height: 500px;
+    overflow-y: auto;
+}

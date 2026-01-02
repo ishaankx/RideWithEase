@@ -16,7 +16,9 @@ import java.util.List;
 public class AuthServlet extends HttpServlet {
     private static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("rideEasePU");
     private Gson gson = new Gson();
-    private static final Key KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+
+
+    public static final Key KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -53,7 +55,6 @@ public class AuthServlet extends HttpServlet {
                             .signWith(KEY)
                             .compact();
 
-
                     String userJson = gson.toJson(u);
                     String jsonResponse = "{\"token\": \"" + token + "\", \"role\": \"" + u.getRole() + "\", \"user\": " + userJson + "}";
 
@@ -61,6 +62,8 @@ public class AuthServlet extends HttpServlet {
                 } else {
                     resp.setStatus(401);
                 }
+            } else if ("/me".equals(path)) {
+
             }
         } finally {
             em.close();

@@ -8,15 +8,17 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <link rel="stylesheet" href="Styles/customer.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-light">
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="text-primary fw-bold">RideWithEase</h4>
-        <div>
-            <a href="profile.jsp" class="me-3 fw-bold text-dark text-decoration-none" id="userName"></a>
-            <span id="loyaltyPoints" class="me-3 text-success fw-semibold"></span>
+        <div class="d-flex align-items-center">
+            <a href="profile.jsp" class="btn btn-outline-dark btn-sm me-2 border-0" title="My Profile">
+                <i class="fa-solid fa-user-circle fa-lg"></i> <span id="userName" class="ms-1 fw-bold"></span>
+            </a>
             <button onclick="logout()" class="btn btn-outline-danger btn-sm">Logout</button>
         </div>
     </div>
@@ -50,11 +52,9 @@
                 <div id="driverInfo" class="card mt-3 border-success d-none" style="background: #f0fff4;">
                     <div class="card-body">
                         <h6 class="text-success fw-bold">🚖 Driver Assigned!</h6>
-
                         <div class="alert alert-warning text-center fw-bold fs-4 py-2 mt-2">
                             PIN: <span id="rideOtp">----</span>
                         </div>
-
                         <hr>
                         <h4 id="dName" class="fw-bold">...</h4>
                         <div id="dRating" class="badge bg-warning text-dark mb-2 d-none"></div>
@@ -88,7 +88,7 @@
                             <span>🚗 Mini</span> <span class="badge bg-primary rounded-pill" id="price-mini">₹0</span>
                         </button>
                         <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="selectRide('PRIME', 20)">
-                            <span>🚙 SUV Prime</span> <span class="badge bg-primary rounded-pill" id="price-prime">₹0</span>
+                            <span>SUV Prime</span> <span class="badge bg-primary rounded-pill" id="price-prime">₹0</span>
                         </button>
                     </div>
                 </div>
