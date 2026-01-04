@@ -88,7 +88,7 @@
                             <span>🚗 Mini</span> <span class="badge bg-primary rounded-pill" id="price-mini">₹0</span>
                         </button>
                         <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="selectRide('PRIME', 20)">
-                            <span>SUV Prime</span> <span class="badge bg-primary rounded-pill" id="price-prime">₹0</span>
+                            <span>🚙 SUV Prime</span> <span class="badge bg-primary rounded-pill" id="price-prime">₹0</span>
                         </button>
                     </div>
                 </div>
