@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        // Ensure these names match your "Global Tool Configuration" in Jenkins
+
         maven 'Maven 3'
         jdk 'JDK 17'
     }
@@ -22,7 +22,7 @@ pipeline {
         stage('Maven Build') {
             steps {
                 echo 'Building the application...'
-                // CHANGED: 'sh' to 'bat' for Windows
+
                 bat 'mvn clean compile'
             }
         }
@@ -30,7 +30,7 @@ pipeline {
         stage('Unit Test Execution') {
             steps {
                 echo 'Running unit tests...'
-                // CHANGED: 'sh' to 'bat'
+
                 bat 'mvn test'
             }
             post {
@@ -43,7 +43,7 @@ pipeline {
         stage('WAR File Generation') {
             steps {
                 echo 'Packaging WAR file...'
-                // CHANGED: 'sh' to 'bat'
+
                 bat 'mvn package -DskipTests'
             }
         }
