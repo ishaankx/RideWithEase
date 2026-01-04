@@ -51,6 +51,112 @@ The application utilizes **OpenStreetMap (Leaflet)** for mapping and routing, el
 
 ---
 
+## API Documentation
+
+The backend exposes a RESTful API handled by Java Servlets. Below are the key endpoints.
+
+### 1. Authentication (`/api/auth`)
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/register` | Register a new Customer or Driver. |
+| `POST` | `/login` | Authenticate user and receive a JWT token. |
+
+**Payload (Register - Customer):**
+```json
+{
+  "fullName": "John Doe",
+  "email": "john@example.com",
+  "phone": "9876543210",
+  "password": "secretpassword",
+  "role": "RIDER"
+}
+```
+
+**Register (Driver) — payload**
+```json
+{
+   "fullName": "Jane Driver",
+   "email": "driver@example.com",
+   "role": "DRIVER",
+   "license": "DL12345",
+   "plate": "KA-01-AB-1234",
+   "make": "Toyota",
+   "model": "Etios",
+   "color": "White",
+   "year": 2022
+}
+```
+### 2. Rides (/api/rides)
+| Method | Endpoint                   | Description |
+|:-------|:---------------------------| :--- |
+| `GET`  | `/available`               | (Driver) Get list of rides with status REQUESTED. |
+| `GET`  | `/calculate?distance={km}` | Calculate fare based on distance. |
+| `GET`  | `/status?id={rideId}`      | Poll the current status of a specific ride. |
+| `POST` | `/book`                    | (Customer) Create a new ride request.|
+| `POST` | `/accept`                  | (Driver) Accept a requested ride. |
+| `POST` | `/updateStatus`            | Update ride status (e.g., ONGOING, COMPLETED).|
+
+**Payload (Book Ride)**
+```json
+{
+   "customerId": 1,
+   "pickup": "Connaught Place",
+   "drop": "India Gate",
+   "pickupLat": 28.6304,
+   "pickupLng": 77.2177,
+   "dropLat": 28.6129,
+   "dropLng": 77.2295,
+   "distance": 3.5,
+   "fare": 50.0,
+   "duration": "15 mins"
+}
+```
+**Payload (Update Status — OTP required when changing to ONGOING)**
+```json
+{
+   "rideId": 101,
+   "status": "ONGOING",
+   "otp": "4521"
+}
+```
+### 3. User Profile (/api/profile)
+| Method | Endpoint                   | Description |
+|:-------|:---------------------------| :--- |
+| `GET`  | `/`                        | Retrieve profile details, loyalty points, and ride history. Requires Authorization header. |
+
+### 4. Payments (/api/payments)
+| Method | Endpoint                   | Description |
+|:-------|:---------------------------| :--- |
+| `POST` | `/`                        | Process payment and apply coupons (newrider, 10rides, 50rides). |
+
+**Payload**
+```json
+{
+   "rideId": 101,
+   "amount": 45.0,
+   "method": "UPI",
+   "coupon": "newrider"
+}
+```
+### 5. Ratings (/api/ratings)
+| Method | Endpoint                   | Description |
+|:-------|:---------------------------| :--- |
+| `POST` | `/`                        | Submit a rating for a driver or customer after a trip. |
+
+**Payload**
+```json
+{
+   "rideId": 101,
+   "givenBy": 1,
+   "givenTo": 2,
+   "score": 5,
+   "comment": "Smooth drive!"
+}
+
+```
+
+
 ## Getting Started
 
 Follow these instructions to set up the project locally.
