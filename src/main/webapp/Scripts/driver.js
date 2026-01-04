@@ -8,6 +8,11 @@ let availableRides = [];
 let selectedRide = null;
 let currentRideId = null;
 let map = null;
+let loc=null;
+let pick=null;
+
+
+
 
 
 async function loadRides() {
